@@ -88,9 +88,7 @@ sliceSounds[0].set_volume(0.5)
 sliceSounds[1].set_volume(0.3)
 sliceSounds[2].set_volume(0.3)
 
-
-
-# high score read in from text file
+# high score read in from text file, done once
 file = open('high_score.txt', 'r')
 read = file.readlines()
 high_score = int(read[0])
@@ -106,8 +104,6 @@ class character:
     yposHome = 300
     def draw(self):
         screen.blit(atk1, (self.x_pos, self.y_pos))
-
-
 class Word:
     def __init__(self, text, speed, y_pos, x_pos):
         self.text = text
@@ -123,7 +119,6 @@ class Word:
 
     def update(self):
         self.x_pos -= self.speed
-
 class Button:
     def __init__(self, x_pos, y_pos, text, clicked, surf):
         self.x_pos = x_pos
@@ -142,17 +137,17 @@ class Button:
                 pygame.draw.circle(self.surf, (190, 89, 135), (self.x_pos, self.y_pos), 35)
         pygame.draw.circle(self.surf, 'white', (self.x_pos, self.y_pos), 35, 3)
         self.surf.blit(pause_font.render(self.text, True, 'white'), (self.x_pos - 15, self.y_pos - 27)) #changed offset
-
+# Places character at come specified (x, y) coordinate from argument. Plays animation
 def start_slash_at(x, y):
-    global debug_current_anim, debug_frame_index, debug_playing_attack, player_pos
+    global current_anim, debug_frame_index, debug_playing_attack, player_pos
     player_pos[0] = int(x)
     player_pos[1] = int(y)
 
-    debug_current_anim = random.choice(atkanims)
+    current_anim = random.choice(atkanims)
     debug_frame_index = 0
     debug_playing_attack = True
     random.choice(sliceSounds).play()
-
+# Target word method. Finds matches in word_list. Ensures only one single targeted word
 def choose_target(words, typed):
     if typed == "":
         return None
@@ -160,7 +155,7 @@ def choose_target(words, typed):
     if not matches:
         return None
     return min(matches, key=lambda w: w.x_pos)  # leftmost / most urgent
-
+# Breaks down a sprite animation stored on a single file to its respective frames. returns frames list which contains rect obj for each frame of a animation
 def getImgSlices(img, countFrames):
     frames = []
     horizontalRes = img.get_width()
@@ -177,7 +172,7 @@ def getImgSlices(img, countFrames):
 
         frames.append(frame)
     return frames
-
+# Create static screen elements, header/footer section, some text elements (Level {}, Lives {}.. )
 def draw_screen():
     #header section
     screen.blit(banner_font.render(f'SCORE: {score}', True, 'black'), (250, 10))
@@ -202,7 +197,7 @@ def draw_screen():
     pause_btn = Button(748, HEIGHT - 52, "II", False, screen)
     pause_btn.draw()
     return pause_btn.clicked
-
+# Draw pause menu, allow user to select string lengths (difficulty level)
 def draw_pause():
     choice_commits = copy.deepcopy(selected_d)
     surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
@@ -233,7 +228,7 @@ def draw_pause():
 
     screen.blit(surface, (0,0))
     return resume_btn.clicked, choice_commits, quit_btn.clicked
-
+# After user submits word, checks that string with string from word_objects list, deletes, updates score
 def check_answer(scor):
     for wrd in word_objects:
         if wrd.text == submit:
@@ -242,7 +237,6 @@ def check_answer(scor):
             word_objects.remove(wrd)
             woosh.play()
     return scor
-
 # Generate new level function
 def generate_level():
     word_objs = []
@@ -268,7 +262,6 @@ def generate_level():
         new_word = Word(text, speed, y_pos, x_pos)
         word_objs.append(new_word)
     return word_objs
-
 # Check high score
 def check_high_score():
     global high_score
@@ -280,7 +273,7 @@ def check_high_score():
 
 atkanims = [getImgSlices(atk1, 4), getImgSlices(atk2, 5), getImgSlices(atk3, 4)]
 idleanim = getImgSlices(idle, 6)
-debug_current_anim = random.choice(atkanims)
+current_anim = random.choice(atkanims)
 # Game loop
 running = True
 while running:
@@ -319,63 +312,52 @@ while running:
         if init == score:
             wrong.play()
             pass
-
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             check_high_score()
             running = False
-        if event.type == pygame.KEYDOWN:                    #-- KEYPRESSES  --
-            # --- toggle pause always works ---
-            if event.key == pygame.K_ESCAPE:
+        if event.type == pygame.KEYDOWN:        #-- KEYPRESSES  --#
+            if event.key == pygame.K_ESCAPE:    #-- ESC KEY  --#
                 paused = not paused
                 continue
-
             if paused:
                 continue
-
-            # --- BACKSPACE ---
-            if event.key == pygame.K_BACKSPACE:
+            if event.key == pygame.K_BACKSPACE: #-- BACKSPACE  --#
                 if len(active_string) > 0:
                     active_string = active_string[:-1]
                     target_word = choose_target(word_objects, active_string)
                     click.play()
                 continue
-
-            # --- ENTER / SPACE (submit) ---
-            if event.key in (pygame.K_RETURN, pygame.K_SPACE):
+            if event.key in (pygame.K_RETURN, pygame.K_SPACE): #-- ENTER/RETURN  --#
                 submit = active_string
-
-                # run your check (or keep your submit != "" block)
-                # easiest: just do it directly here:
                 init = score
                 score = check_answer(score)
                 if score == init:
                     wrong.play()
-
                 # clear typed string after submit
                 active_string = ""
                 target_word = None
                 submit = ""
                 continue
-
-            # --- LETTER KEYS ONLY ---
-            if event.unicode and event.unicode.lower() in letters:
+            if event.unicode and event.unicode.lower() in letters:  # -- ALPHABET  --#
                 letter = event.unicode.lower()
                 active_string += letter
+                # keep only last 10 chars (shift left if over 10)
+                if len(active_string) > 10:
+                    active_string = active_string[-10:]
                 target_word = choose_target(word_objects, active_string)
-
-                # Slash every keystroke:
+                # Play Animation
                 if target_word is not None:
                     start_slash_at(target_word.x_pos - 70, target_word.y_pos - 40)
                 else:
                     start_slash_at(player_home[0], player_home[1])
-        if event.type == pygame.MOUSEBUTTONUP and paused:
+        if event.type == pygame.MOUSEBUTTONUP and paused: #-- MB1  --#
             if event.button == 1:
                 selected_d = changes
     if pause_butt:
         paused = True
 
-    if lives < 1:
+    if lives < 1: #-- Reset game if out of lives --#
         paused = True
         level = 1
         lives = 5
@@ -383,15 +365,14 @@ while running:
         new_level = True
         check_high_score()
         score = 0
-    if not paused:
+    if not paused: #-- Iterate through animation frames --#
         debug_frame_index += debug_anim_speed
-    if debug_playing_attack:
-        if debug_frame_index >= len(debug_current_anim):
+    if debug_playing_attack: #-- Plays full atk animation before home to home coord --#
+        if debug_frame_index >= len(current_anim):
             debug_frame_index = 0
             debug_playing_attack = False
             player_pos = player_home[:]  # go back home
-
-        frame = debug_current_anim[int(debug_frame_index)]
+        frame = current_anim[int(debug_frame_index)]
     else:
         if debug_frame_index >= len(idleanim):
             debug_frame_index = 0
