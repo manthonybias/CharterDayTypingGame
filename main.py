@@ -54,8 +54,19 @@ target_word = None   # will have a single target word so multiple arent highligh
 # Load in assets (fonts/sounds)
 header_font = pygame.font.Font('assets/fonts/Square.ttf', 50)
 pause_font = pygame.font.Font('assets/fonts/1up.ttf', 38)
+#banner_font = pygame.font.Font('assets/fonts/BitfalsFont.otf', 30) #1up 28
 banner_font = pygame.font.Font('assets/fonts/1up.ttf', 28) #1up 28
 font = pygame.font.Font('assets/fonts/Blockletter.otf', 28) #AldotheApache
+background = pygame.image.load('assets/background.png')
+background = pygame.transform.scale(background, (background.get_width()/2, background.get_height()/2))
+background1 = pygame.image.load('assets/background1.png')
+background1 = pygame.transform.scale(background1, (background1.get_width()/2, background1.get_height()/2))
+darkbackground = pygame.image.load('assets/darkbackground.png')
+darkbackground = pygame.transform.scale(darkbackground, (darkbackground.get_width()/2, darkbackground.get_height()/2))
+bg6 = pygame.image.load('assets/6.png')
+bg6 = pygame.transform.scale(bg6, (bg6.get_width()/3, bg6.get_height()/3))
+
+
 # Character Animations
 atk1 = pygame.image.load('assets/samurai1assets/Attack_1.png').convert_alpha()
 atk2 = pygame.image.load('assets/samurai1assets/Attack_2.png').convert_alpha()
@@ -111,11 +122,26 @@ class Word:
         self.y_pos = y_pos
         self.x_pos = x_pos
 
+    def draw_text_with_outline(self, text, color, outline_color="black", thickness=2):
+        base = font.render(text, True, color)
+        outline = font.render(text, True, outline_color)
+
+        # draw outline
+        for dx in range(-thickness, thickness + 1):
+            for dy in range(-thickness, thickness + 1):
+                if dx != 0 or dy != 0:
+                    screen.blit(outline, (self.x_pos + dx, self.y_pos + dy))
+
+        # draw main text
+        screen.blit(base, (self.x_pos, self.y_pos))
+
     def draw(self, is_target=False, typed=""):
-        screen.blit(font.render(self.text, True, "black"), (self.x_pos, self.y_pos))
+        # draw the full word
+        self.draw_text_with_outline(self.text, "white")
 
         if is_target:
-            screen.blit(font.render(typed, True, "green"), (self.x_pos, self.y_pos))
+            # overlay typed portion
+            self.draw_text_with_outline(typed, "green")
 
     def update(self):
         self.x_pos -= self.speed
@@ -175,6 +201,8 @@ def getImgSlices(img, countFrames):
 # Create static screen elements, header/footer section, some text elements (Level {}, Lives {}.. )
 def draw_screen():
     #header section
+    pygame.draw.rect(screen, (235, 235, 230), pygame.Rect(0,0, WIDTH, 55))
+    pygame.draw.line(screen, 'black', (0, 55), (WIDTH, 55), 2)  # header bottom
     screen.blit(banner_font.render(f'SCORE: {score}', True, 'black'), (250, 10))
     screen.blit(banner_font.render(f'BEST: {high_score}', True, 'black'), (550, 10))
     screen.blit(banner_font.render(f'LIVES: {lives}', True, 'black'), (10, 10))
@@ -278,6 +306,8 @@ current_anim = random.choice(atkanims)
 running = True
 while running:
     screen.fill("gray")
+    #screen.blit(bg6, (-200,0))
+
     timer.tick(fps)
     # draw background screen stuff and statuses and get pause button status
     pause_butt = draw_screen()
