@@ -44,7 +44,7 @@ letters = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n',
            'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
 new_level = True
 #Selecting different len strings in the game, by default
-selected_d = [False, True, False, False, False, False, False]
+selected_d = [True, True, False, False, False, False, False]
 target_word = None   # will have a single target word so multiple arent highlighted
 
 # Load in assets (fonts/sounds)
@@ -58,6 +58,10 @@ atk2 = pygame.image.load('assets/samurai1assets/Attack_2.png').convert_alpha()
 atk3 = pygame.image.load('assets/samurai1assets/Attack_3.png').convert_alpha()
 run2 = pygame.image.load('assets/samurai1assets/Run.png').convert_alpha()
 idle = pygame.image.load('assets/samurai1assets/Idle.png').convert_alpha()
+# Initialize for character
+player_home = [50, int((HEIGHT / 2) - idle.get_height() / 2)]  #home coord
+player_pos = player_home[:]  # copy list
+
 # Sound effects
 pygame.mixer.init() # pygame audio mixer
 pygame.mixer.music.load('assets/sounds/music.mp3')
@@ -69,9 +73,15 @@ woosh = pygame.mixer.Sound('assets/sounds/Swoosh.mp3')
 woosh.set_volume(0.2)
 wrong = pygame.mixer.Sound('assets/sounds/Instrument Strum.mp3')
 wrong.set_volume(0.3)
-sliceSounds = [pygame.mixer.Sound('assets/sounds/samuraisounds/slice1.mp3'), pygame.mixer.Sound('assets/sounds/samuraisounds/slice2.wav')]
+damage = pygame.mixer.Sound('assets/sounds/damage.wav')
+damage.set_volume(0.75)
+levelup = pygame.mixer.Sound('assets/sounds/levelup.wav')
+levelup.set_volume(1.5)
+sliceSounds = [pygame.mixer.Sound('assets/sounds/samuraisounds/slice1.mp3'),
+               pygame.mixer.Sound('assets/sounds/samuraisounds/slice2.wav')]
 sliceSounds[0].set_volume(0.5)
 sliceSounds[1].set_volume(0.3)
+sliceSounds[2].set_volume(0.5)
 
 
 
@@ -128,6 +138,16 @@ class Button:
         pygame.draw.circle(self.surf, 'white', (self.x_pos, self.y_pos), 35, 3)
         self.surf.blit(pause_font.render(self.text, True, 'white'), (self.x_pos - 15, self.y_pos - 27)) #changed offset
 
+def start_slash_at(x, y):
+    global debug_current_anim, debug_frame_index, debug_playing_attack, player_pos
+    player_pos[0] = int(x)
+    player_pos[1] = int(y)
+
+    debug_current_anim = random.choice(atkanims)
+    debug_frame_index = 0
+    debug_playing_attack = True
+    random.choice(sliceSounds).play()
+
 def choose_target(words, typed):
     if typed == "":
         return None
@@ -152,7 +172,6 @@ def getImgSlices(img, countFrames):
 
         frames.append(frame)
     return frames
-
 
 def draw_screen():
     #header section
@@ -200,10 +219,10 @@ def draw_pause():
         btn = Button(160 + (i * 80), 350, str(i + 2), False, surface)
         btn.draw()
         if btn.clicked:
-            if choice_commits[i]:
-                choice_commits[i] = False
-            else:
-                choice_commits[i] = True
+            if btn.clicked:
+                # selecting all len string before it.
+                for j in range(len(choice_commits)):
+                    choice_commits[j] = (j <= i)
         if selected_d[i]:
             pygame.draw.circle(surface, 'green', (160 + (i * 80), 350), 35, 5)
 
@@ -277,9 +296,11 @@ while running:
                 w.update()
             if w.x_pos < -200: #if a word exits the screen by 200px remove life
                 word_objects.remove(w)
+                damage.play()
                 lives -= 1
     if len(word_objects) <= 0 and not paused:
         level += 1
+        levelup.play()
         new_level = True
     if submit != "":
         init = score
@@ -294,30 +315,50 @@ while running:
             check_high_score()
             running = False
         if event.type == pygame.KEYDOWN:                    #-- KEYPRESSES  --
-            if not paused:
-                if event.unicode.lower() in letters: #list of valid letters, keystrokes
-                    active_string += event.unicode.lower()
-                    target_word = choose_target(word_objects, active_string)
+            # --- toggle pause always works ---
+            if event.key == pygame.K_ESCAPE:
+                paused = not paused
+                continue
 
-                    debug_current_anim = random.choice(atkanims)
-                    debug_frame_index = 0
-                    debug_playing_attack = True
-                    random.choice(sliceSounds).play()
+            if paused:
+                continue
 
-                    random.choice(sliceSounds).play()
-                if event.key == pygame.K_BACKSPACE and len(active_string) > 0:
+            # --- BACKSPACE ---
+            if event.key == pygame.K_BACKSPACE:
+                if len(active_string) > 0:
                     active_string = active_string[:-1]
                     target_word = choose_target(word_objects, active_string)
                     click.play()
-                if event.key == pygame.K_RETURN or event.key == pygame.K_SPACE:
-                    submit = active_string
-                    active_string = ""
-            if event.key == pygame.K_ESCAPE:
-                if paused:
-                    paused = False
-                else:
-                    paused = True
+                continue
 
+            # --- ENTER / SPACE (submit) ---
+            if event.key in (pygame.K_RETURN, pygame.K_SPACE):
+                submit = active_string
+
+                # run your check (or keep your submit != "" block)
+                # easiest: just do it directly here:
+                init = score
+                score = check_answer(score)
+                if score == init:
+                    wrong.play()
+
+                # clear typed string after submit
+                active_string = ""
+                target_word = None
+                submit = ""
+                continue
+
+            # --- LETTER KEYS ONLY ---
+            if event.unicode and event.unicode.lower() in letters:
+                letter = event.unicode.lower()
+                active_string += letter
+                target_word = choose_target(word_objects, active_string)
+
+                # Slash every keystroke:
+                if target_word is not None:
+                    start_slash_at(target_word.x_pos - 70, target_word.y_pos - 40)
+                else:
+                    start_slash_at(player_home[0], player_home[1])
         if event.type == pygame.MOUSEBUTTONUP and paused:
             if event.button == 1:
                 selected_d = changes
@@ -332,22 +373,21 @@ while running:
         new_level = True
         check_high_score()
         score = 0
-    debug_frame_index += debug_anim_speed
-
+    if not paused:
+        debug_frame_index += debug_anim_speed
     if debug_playing_attack:
-        # play chosen attack ONCE, then go back to idle
         if debug_frame_index >= len(debug_current_anim):
             debug_frame_index = 0
             debug_playing_attack = False
+            player_pos = player_home[:]  # go back home
+
         frame = debug_current_anim[int(debug_frame_index)]
     else:
-        # loop idle forever
         if debug_frame_index >= len(idleanim):
             debug_frame_index = 0
         frame = idleanim[int(debug_frame_index)]
 
-    screen.blit(frame, (50, (HEIGHT / 2) - frame.get_height() / 2))
-
+    screen.blit(frame, (player_pos[0], player_pos[1]))
     pygame.display.flip() #updates screen
 
 pygame.quit()
