@@ -4,8 +4,12 @@ import pygame, sys, random, copy
 pygame.init()
 
 # nltk natural language toolkit
-with open("assets/words/en", "r", encoding="utf-8") as f:
-    wordlist = [word.strip() for word in f.readlines()]
+with open("assets/words/google-10000-english-no-swears.txt", "r", encoding="utf-8") as f:
+    wordlist = [
+        w.strip().lower()
+        for w in f.readlines()
+        if w.strip().isalpha() and 2 <= len(w.strip()) <= 10
+    ]
 len_indexes = []
 length = 1
 
@@ -78,10 +82,11 @@ damage.set_volume(0.75)
 levelup = pygame.mixer.Sound('assets/sounds/levelup.wav')
 levelup.set_volume(1.5)
 sliceSounds = [pygame.mixer.Sound('assets/sounds/samuraisounds/slice1.mp3'),
-               pygame.mixer.Sound('assets/sounds/samuraisounds/slice2.wav')]
+               pygame.mixer.Sound('assets/sounds/samuraisounds/slice2.wav'),
+               pygame.mixer.Sound('assets/sounds/samuraisounds/slice3.ogg')]
 sliceSounds[0].set_volume(0.5)
 sliceSounds[1].set_volume(0.3)
-sliceSounds[2].set_volume(0.5)
+sliceSounds[2].set_volume(0.3)
 
 
 
@@ -242,7 +247,9 @@ def check_answer(scor):
 def generate_level():
     word_objs = []
     include = []
-    vertical_spacing = (HEIGHT - 150) // level
+    TOP_MARGIN = 50 #padding from top of window
+    BOTTOM_MARGIN = 150  #padding from bottom of window
+    vertical_spacing = (HEIGHT - TOP_MARGIN - BOTTOM_MARGIN) // level
     if True not in selected_d:
         selected_d[0] = True
     for i in range(len(selected_d)):
@@ -250,7 +257,10 @@ def generate_level():
             include.append((len_indexes[i], len_indexes[i+1]))
     for i in range(level):
         speed = random.randint(2, 3)
-        y_pos = random.randint(10 + (i * vertical_spacing), (i+1) *vertical_spacing)
+        y_pos = random.randint(
+            TOP_MARGIN + (i * vertical_spacing),
+            TOP_MARGIN + ((i + 1) * vertical_spacing)
+        )
         x_pos = random.randint(WIDTH, WIDTH + 1000)
         ind_sel = random.choice(include)
         index = random.randint(ind_sel[0], ind_sel[1])
