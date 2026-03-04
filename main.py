@@ -57,6 +57,8 @@ pause_font = pygame.font.Font('assets/fonts/1up.ttf', 38)
 #banner_font = pygame.font.Font('assets/fonts/BitfalsFont.otf', 30) #1up 28
 banner_font = pygame.font.Font('assets/fonts/1up.ttf', 28) #1up 28
 font = pygame.font.Font('assets/fonts/Blockletter.otf', 28) #AldotheApache
+
+# Background images not used really
 background = pygame.image.load('assets/background.png')
 background = pygame.transform.scale(background, (background.get_width()/2, background.get_height()/2))
 background1 = pygame.image.load('assets/background1.png')
@@ -65,6 +67,10 @@ darkbackground = pygame.image.load('assets/darkbackground.png')
 darkbackground = pygame.transform.scale(darkbackground, (darkbackground.get_width()/2, darkbackground.get_height()/2))
 bg6 = pygame.image.load('assets/6.png')
 bg6 = pygame.transform.scale(bg6, (bg6.get_width()/3, bg6.get_height()/3))
+
+# uog logo
+uog = pygame.image.load('assets/uog_logo.png')
+uog = pygame.transform.scale(uog, (uog.get_width()/2, uog.get_height()/2))
 
 
 # Character Animations
@@ -307,6 +313,7 @@ running = True
 while running:
     screen.fill("gray")
     #screen.blit(bg6, (-200,0))
+    screen.blit(uog, (WIDTH - uog.get_width() + 20, 50))
 
     timer.tick(fps)
     # draw background screen stuff and statuses and get pause button status
