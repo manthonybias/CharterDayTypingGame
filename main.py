@@ -4,8 +4,8 @@ import pygame, sys, random, copy
 pygame.init()
 
 # nltk natural language toolkit
-from nltk.corpus import words
-wordlist = words.words()
+with open("assets/words/en", "r", encoding="utf-8") as f:
+    wordlist = [word.strip() for word in f.readlines()]
 len_indexes = []
 length = 1
 
