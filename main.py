@@ -39,13 +39,13 @@ score = 0
 lives = 5
 paused = True
 submit = ""
-#user = character(100, HEIGHT- 300, False)
 word_objects = []
 letters = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q',
            'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
 new_level = True
 #Selecting different len strings in the game, by default
 selected_d = [False, True, False, False, False, False, False]
+target_word = None   # will have a single target word so multiple arent highlighted
 
 # Load in assets (fonts/sounds)
 header_font = pygame.font.Font('assets/fonts/Square.ttf', 50)
@@ -100,12 +100,11 @@ class Word:
         self.y_pos = y_pos
         self.x_pos = x_pos
 
-    def draw(self):
-        color = 'black'
-        screen.blit(font.render(self.text, True, color), (self.x_pos, self.y_pos))
-        act_len = len(active_string)
-        if active_string == self.text[:act_len]:
-            screen.blit(font.render(active_string, True, 'green'), (self.x_pos, self.y_pos))
+    def draw(self, is_target=False, typed=""):
+        screen.blit(font.render(self.text, True, "black"), (self.x_pos, self.y_pos))
+
+        if is_target:
+            screen.blit(font.render(typed, True, "green"), (self.x_pos, self.y_pos))
 
     def update(self):
         self.x_pos -= self.speed
@@ -128,6 +127,14 @@ class Button:
                 pygame.draw.circle(self.surf, (190, 89, 135), (self.x_pos, self.y_pos), 35)
         pygame.draw.circle(self.surf, 'white', (self.x_pos, self.y_pos), 35, 3)
         self.surf.blit(pause_font.render(self.text, True, 'white'), (self.x_pos - 15, self.y_pos - 27)) #changed offset
+
+def choose_target(words, typed):
+    if typed == "":
+        return None
+    matches = [w for w in words if w.text.startswith(typed)]
+    if not matches:
+        return None
+    return min(matches, key=lambda w: w.x_pos)  # leftmost / most urgent
 
 def getImgSlices(img, countFrames):
     frames = []
@@ -265,7 +272,7 @@ while running:
         new_level = False
     else:
         for w in word_objects:
-            w.draw()
+            w.draw(is_target=(w is target_word), typed=active_string)
             if not paused:
                 w.update()
             if w.x_pos < -200: #if a word exits the screen by 200px remove life
@@ -286,21 +293,21 @@ while running:
         if event.type == pygame.QUIT:
             check_high_score()
             running = False
-        if event.type == pygame.KEYDOWN:
+        if event.type == pygame.KEYDOWN:                    #-- KEYPRESSES  --
             if not paused:
                 if event.unicode.lower() in letters: #list of valid letters, keystrokes
                     active_string += event.unicode.lower()
+                    target_word = choose_target(word_objects, active_string)
 
                     debug_current_anim = random.choice(atkanims)
                     debug_frame_index = 0
                     debug_playing_attack = True
                     random.choice(sliceSounds).play()
 
-
-
                     random.choice(sliceSounds).play()
                 if event.key == pygame.K_BACKSPACE and len(active_string) > 0:
                     active_string = active_string[:-1]
+                    target_word = choose_target(word_objects, active_string)
                     click.play()
                 if event.key == pygame.K_RETURN or event.key == pygame.K_SPACE:
                     submit = active_string
