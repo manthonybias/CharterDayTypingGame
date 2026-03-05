@@ -33,7 +33,7 @@ fps = 60
 
 # Debugging variables
 debug_frame_index = 0
-debug_anim_speed = .50 # Higher is faster
+debug_anim_speed = .5 # Higher is faster
 debug_playing_attack = False
 
 # Game Variables
@@ -312,20 +312,25 @@ current_anim = random.choice(atkanims)
 running = True
 while running:
     screen.fill("gray")
-    #screen.blit(bg6, (-200,0))
+    screen.blit(bg6, (-200,0))
     screen.blit(uog, (WIDTH - uog.get_width() + 20, 50))
 
     timer.tick(fps)
     # draw background screen stuff and statuses and get pause button status
+    if not paused: #-- Iterate through animation frames --#
+        debug_frame_index += debug_anim_speed
+    if debug_playing_attack: #-- Plays full atk animation before home to home coord --#
+        if debug_frame_index >= len(current_anim):
+            debug_frame_index = 0
+            debug_playing_attack = False
+            player_pos = player_home[:]  # go back home
+        frame = current_anim[int(debug_frame_index)]
+    else:
+        if debug_frame_index >= len(idleanim):
+            debug_frame_index = 0
+        frame = idleanim[int(debug_frame_index)]
+    screen.blit(frame, (player_pos[0], player_pos[1]))
     pause_butt = draw_screen()
-    if paused:
-        resume_butt, changes, quit_butt = draw_pause()
-        if resume_butt:
-            paused = False
-        if quit_butt:
-            #add checking for high score before exiting program
-            check_high_score()
-            running = False
     if new_level and not paused:
         word_objects = generate_level()
         new_level = False
@@ -393,7 +398,14 @@ while running:
                 selected_d = changes
     if pause_butt:
         paused = True
-
+    if paused:
+        resume_butt, changes, quit_butt = draw_pause()
+        if resume_butt:
+            paused = False
+        if quit_butt:
+            #add checking for high score before exiting program
+            check_high_score()
+            running = False
     if lives < 1: #-- Reset game if out of lives --#
         paused = True
         level = 1
@@ -402,20 +414,7 @@ while running:
         new_level = True
         check_high_score()
         score = 0
-    if not paused: #-- Iterate through animation frames --#
-        debug_frame_index += debug_anim_speed
-    if debug_playing_attack: #-- Plays full atk animation before home to home coord --#
-        if debug_frame_index >= len(current_anim):
-            debug_frame_index = 0
-            debug_playing_attack = False
-            player_pos = player_home[:]  # go back home
-        frame = current_anim[int(debug_frame_index)]
-    else:
-        if debug_frame_index >= len(idleanim):
-            debug_frame_index = 0
-        frame = idleanim[int(debug_frame_index)]
 
-    screen.blit(frame, (player_pos[0], player_pos[1]))
     pygame.display.flip() #updates screen
 
 pygame.quit()
