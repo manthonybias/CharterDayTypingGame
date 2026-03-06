@@ -33,7 +33,7 @@ fps = 60
 
 # Debugging variables
 debug_frame_index = 0
-debug_anim_speed = .5 # Higher is faster
+debug_anim_speed = 0.4 # Higher is faster
 debug_playing_attack = False
 
 # Game Variables
@@ -171,7 +171,8 @@ class Button:
         self.surf.blit(pause_font.render(self.text, True, 'white'), (self.x_pos - 15, self.y_pos - 27)) #changed offset
 # Places character at come specified (x, y) coordinate from argument. Plays animation
 def start_slash_at(x, y):
-    global current_anim, debug_frame_index, debug_playing_attack, player_pos
+    global current_anim, debug_frame_index, debug_playing_attack, player_pos, debug_anim_speed
+    debug_anim_speed = 0.45
     player_pos[0] = int(x)
     player_pos[1] = int(y)
 
@@ -328,6 +329,7 @@ while running:
     else:
         if debug_frame_index >= len(idleanim):
             debug_frame_index = 0
+            debug_anim_speed = 0.1
         frame = idleanim[int(debug_frame_index)]
     screen.blit(frame, (player_pos[0], player_pos[1]))
     pause_butt = draw_screen()
